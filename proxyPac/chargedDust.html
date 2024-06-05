@@ -1,0 +1,192 @@
+<html>
+    <head>
+        <title>www.chargedDust.com</title>
+        <meta name="viewport" content="width=device-width,initial-scale=1.0">
+        <link rel="stylesheet" id="sheets" href="css/chargedStyles.css"/>
+        <script src="js/jquery.min.js"></script>
+        <script>
+          //checking if user logged in first
+         if(!sessionStorage["perm"]) window.location="/";
+         else sessionStorage["perm"]=false;//preventing opening the same tab again at once
+
+            $(document).ready(()=>{
+                if($(window).innerWidth()<950)  $("#sheets").attr({"href":"css/chargedMobile.css"});
+
+
+                $("#client").html("Hi "+sessionStorage["username"]);
+
+                $('#state').ajaxStart(()=>{$(this).html("sending...")});
+                    $("#state").ajaxStop(()=>{$(this).html("done...")});
+                    $("#state").ajaxSuccess(()=>{$(this).html("request successful...")})
+                    $("#state").ajaxError((e)=>{$(this).html("error occured: "+e)})
+
+                let set=false;
+                let $opts={
+                    url:"/proxyPac/getFiles",
+                    type:"POST",
+                    dataType:"json",
+                    data:JSON.stringify({fileName:sessionStorage["username"],read:true}),
+                    success:(data)=>{
+                        data=eval(data);
+                        $("#urls").children().remove(); //cleaning for a fresh list
+                        for(i=0; i<data.length; i++){   // updating list
+                            $("<div id="+i+"><italic class='"+i+"'>"+data[i].url+"</italic></div>").appendTo("#urls");
+                        }
+                    },
+                    error:(e)=>{console.log("An internal request error has occured")}
+                }
+                $.ajax($opts); //getting urls
+
+                $("#add").bind("click",()=>{
+                    if(!Number(($("#newdata").val()).length)<1){  //no blank spaces allowed
+                      let  $options={
+                            url:"/proxyPac/saveData", //!!important!!
+                            type:"POST",
+                            dataType:"json",
+                            data:JSON.stringify({url:$("#newdata").val(),fileName:sessionStorage["username"]}),
+                          success:(data)=>{
+                            console.log("state:["+data.status+"--"+data.statusText+"]");
+                            data=eval(data);
+                            console.log(data);
+                    $("#urls").children().remove(); //cleaning for a fresh list
+                    for(i=0; i<data.length; i++){   // updating list
+                           $("<div id="+i+"><italic class='"+i+"'>"+data[i].url+"</italic></div>").appendTo("#urls");
+                            }
+                        },
+                        error:(e)=>{console.log("An internal request error has occured")}
+                    }
+
+                    $.ajax($options); //adding a new url
+                    $("#newdata").val('');
+                    }
+                    else alert("No url has been provided");
+               
+                });
+
+                $("#remove").bind("click",(e)=>{
+                    if(set) return;//not more than one checkbox,am using a hammer to kill a fly  i know
+                    set=true;
+                $divs=$("#urls").children("div");
+                $cnt=0;
+                $($divs).each(()=>{ //appneding a checkbox to each url
+                    $($divs).eq($cnt).append("<input type='checkbox' class='"+($cnt+1)+"'/>");
+                    ++$cnt;
+                })
+                });
+
+                $("#logout").bind("click",(e)=>{
+                    e.preventDefault();
+                    let $opts={
+                        url:"/logout",
+                        type:"POST",
+                        data:JSON.stringify({name:sessionStorage["username"],password:sessionStorage["password"]}),
+                        complete:()=>{console.log("request done");},
+                        success:(data)=>{
+                            alert("user logged out...")
+                            sessionStorage["username"]=false,sessionStorage["password"]='';
+                            window.location="/";
+                        },
+                        error:(e)=>{console.log("Error while logging out:"+e.error)}
+                    }
+                    $.ajax($opts);
+                })
+
+                $("#done").bind("click",()=>{
+                    let $array=[],$cnt=0;
+                    let $selectedURLS=$("#urls").children("div").children("input"); //getting all checkboxes for inspection
+                
+                    $($selectedURLS).each(()=>{
+                        if($($selectedURLS).eq($cnt).is(":checked")){
+                            $array.push({url:$($selectedURLS).siblings("."+($cnt)).html()});
+                        }
+                        ++$cnt;
+                    });
+
+                    if($array.length<1){alert("No item has been selected"); return;}
+                    set=false;
+
+                    console.log("selected: "+JSON.stringify($array));
+
+                        $options={
+                            url:"/proxyPac/removeData", //!!important!!
+                            type:"POST",
+                            dataType:"json",
+                            data:JSON.stringify({data:$array,fileName:sessionStorage["username"]}),
+                            success:(data)=>{
+                                data=eval(data);
+                                /*create a new list*/
+                                $("#urls").children().remove(); //cleaning for a fresh list
+                                for(i=0; i<data.length; i++){
+                            $("<div id="+i+"><italic class='"+i+"'>"+data[i].url+"</italic></div>").appendTo("#urls");
+                        }
+                            },
+                        complete:(data)=>{console.log("state:["+data.status+"--"+data.statusText+"]")},
+                        error:(e)=>{console.log("An internal request error has occured"+e.status)}
+                    }
+
+                    $.ajax($options); //deleting selected urls
+                   
+
+
+                })
+            })
+        </script>
+    </head>
+
+    <body>
+        <header>
+            <img src="img/logo.png" alt="proxy_logo"/>
+            <h1><center>chargedDust.proxy admin_interface</center></h1>
+            <div id="user">
+                <h4 id="client">client_details</h4>
+                <input type="button" style="color:black;background-color: rgb(63, 63, 219);" id="logout" value="logout"/>
+            </div>
+        </header>
+
+        <label id="state"></label>
+        <div class="mainview">
+            <h2><center>Available frozen addresses</center></h2>
+            <div class="left" id="urls">
+            </div>
+            <div class="right">
+                <div class="ads"></div>
+                <input type="button" id="remove" value="remove"/>
+                <input type="button" id="done" value="done"/>
+            </div>
+        </div>
+
+        <div class="other1"><center>
+            <strong>Add another address to prohibit:</strong>
+            <input type="text" id="newdata" value=""/>
+            <input type="button" id="add" value="add"/>
+        </center> </div>
+      
+        <h2><center>Technical analysis</center></h2>
+
+        <div class="other2">
+            <table>
+                <tr>
+                    <td class="title"><strong>proxy state</strong></td>
+                    <td class="title"><strong>No of blocked addresses</strong></td>
+                    <td class="title"><strong>time frame</strong></td>
+                    <td class="title"><strong>Active accounts</strong></td>
+                    <td class="title"><strong>blocked address</strong></td>
+                </tr>
+                <tr>
+                    <td><strong>active</strong></td>
+                    <td><strong>2</strong></td>
+                    <td><strong>00:00:32</strong></td>
+                    <td><strong>delos</strong></td>
+                    <td><strong>www.google.com</strong></td>
+                </tr>
+                <tr>
+                    <td><strong>active</strong></td>
+                    <td><strong>2</strong></td>
+                    <td><strong>00:00:38</strong></td>
+                    <td><strong>drillox</strong></td>
+                    <td><strong>www.linkedLn.com</strong></td>
+                </tr>
+            </table>
+        </div>
+    </body>
+</html>

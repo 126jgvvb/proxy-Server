@@ -1,0 +1,167 @@
+
+<html>
+    <head>
+        <title>www.login.com</title>
+        <meta name="viewport" content="width=device-width,initial-scale=1.0">
+        <script src="js/jquery.min.js"></script>
+         <!--script_to_check_device_dimensions-->
+         <link id="design" rel="stylesheet" href="css/loginStyles.css" />
+         <script>
+            let state=false,done=false,done1=false;
+
+                window.onload=()=>{
+                    $("#form_2").css("display","none");
+                    //basing    on  pc  absolute 
+                    if($(window).innerWidth()<950) 
+                    {
+                         state=true;
+                      $("#design").attr({"href":"css/chargedStyles2.css"});
+                      $("#P1").css("height",24);
+                      $("#N1").css("height",24);
+                    }
+
+                    //login
+                    $("#sub").click((event)=>{
+                        event.preventDefault();
+                        if(done==true) return;
+                        if($("#N1").val()!='' &&  $("#P1").val()!='') {
+                        let $options={
+                            url:"/login",
+                            type:"POST",
+                            data:JSON.stringify({name:$("#N1").val(),password:$('#P1').val()}),
+                            dataType:"html",
+                            success:(data)=>{ 
+                                console.log(data.message);
+                                sessionStorage["perm"]=true;
+                                window.location="/Dust";
+                            },
+                            complete:(data)=>{ console.log("login request complete...")},
+                            error:(e)=>{alert("Error while loging in...\nplease make sure that the credentials are correct\n and your not logged in already somewhere else")}
+
+                        }
+
+
+                        sessionStorage["username"]=$("#N1").val();
+                        sessionStorage["password"]=$('#P1').val();
+
+                            $.ajax($options); //initiating login...
+                        }
+                        else    $("<span style='color:red'>please fill all the fields</span>").appendTo("#form_1 form");
+                     // done=true;
+                    });
+
+                    //signup
+                    $("#create").click((event)=>{
+                        event.preventDefault();
+                        if(done1==true) return;
+                        if($('#e1').val()!=''&& $('#institute').val()!=''&& $('#newUser').val()!=''&& $('#pass2').val()!=''&& $('#pass3').val()!=''){
+                            if($("#pass2").val()!=$("#pass3").val()){
+                                 $("<span style='color:red'>password mistmatch</span>").appendTo("#form_2 form");
+                              return;
+                            }
+
+                           let obj={
+                            name:$("#newUser").val(),
+                            email:$('#e1').val(),
+                            institute:$('#institute').val(),
+                            password1:$("#pass2").val(),
+                            password2:$("#pass3").val()
+                        }
+                        
+
+                            $options={
+                                url:"/signup",
+                                type:"POST",
+                                dataType:"json",
+                                data:JSON.stringify(obj),
+                                success:(data)=>{
+                                    if(data.message==undefined) alert("operation failed...try using another username");
+                                    else{
+                                        console.log("data recieved:"+data.message);
+                                        sessionStorage["perm"]=true;
+                                        sessionStorage["username"]=$("#newUser").val();
+                                        window.location="/Dust";
+                                    }
+                                    },
+                                conplete:(data)=>{console.log(data.responseText)},
+                                error:(err)=>{ console.log("Ann error occured")}
+                            }
+
+                            $.ajax($options);//initiating sinup
+                        }
+                        else $("<span style='color:red'>all fields must be filled</span>").appendTo("#form_2 form");
+                     //   done1=true;
+                    })
+
+
+
+                }          
+
+                function userPartition(){
+                    if(state){
+                        document.getElementById("middle_man").setAttribute("style","display:none");
+                        document.getElementById("form_2").setAttribute("style","display:block");
+                        $("#sub").val("create").css("background-color","green");
+                        $("form").eq(0).css("display","none");
+
+                        $("#N1").attr("name","newUser");
+                        $("#P1").attr("name","newPassword");
+                        return;
+                    }
+                    document.getElementById("middle_man").setAttribute("style","display:none");
+                   return document.getElementById("form_2").setAttribute("style","display:block");
+                }
+            </script>
+    </head>
+
+    
+    <body style="background-image:url('img/log.jpg')">
+        <div id="form_1">
+            <form   action="login.html"   method="POST"   enctype="multipart/form-data">
+                <h2><center>---------chargedProxy login-------</center></h2>
+                <h3><center>Please provide your Admin credentials</center></h3>
+                <div id="userName">
+                    <label>username:</label>
+                    <input id="N1"  name="name"   type="text"/>
+        </div>
+                <label>password:</label>
+                <input id="P1"  name="password"   type="password"/><br/>
+                <input id="sub" type="submit"   value="LOGIN"/>
+            </form>
+
+            <div  id="middle_man">
+                <label>OR</label><br/>
+                <input id="create_query" onclick="userPartition()" type="button"   value="CREATE USER"/>
+        </div>
+
+            
+            <div id="form_2">
+                <form  action="login.php"   method="POST"   enctype="multipart/form-data">
+                  <h3><center>New Administrator</center></h3>
+                  <div id="NewUserName">
+                    <label>username:</label>
+                    <input name="newUser" id="newUser"  type="text"/>
+        </div>
+        <div class="email">
+            <label>Email:</label>
+            <input  id="e1" name="email"   type="email" required/>
+        </div>
+
+        <div class="firm">
+            <label>institute:</label>
+            <input  id="institute" name="institute"   type="text" required/>
+        </div>
+
+        <div id="Newpassword">
+                    <label>password:</label>
+                    <input  id="pass2" name="password1"   type="password"><br/>
+                    <label>confirm:</label>
+                    <input  id="pass3" name="password2"   type="password"/>
+        </div>
+
+        <input id="create" type="submit"   value="CREATE"/>
+                  </form>
+        </div>
+        </div>
+    </body>
+</html>
